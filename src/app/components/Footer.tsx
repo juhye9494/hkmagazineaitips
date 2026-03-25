@@ -2,6 +2,7 @@ import { Sparkles, Mail, Shield } from 'lucide-react';
 import { SiteSettingsManager } from './SiteSettingsManager';
 import { getFirebaseSiteSettings } from '../../lib/api';
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 export function Footer() {
   const [settings, setSettings] = useState({
