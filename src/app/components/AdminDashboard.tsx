@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { LogOut, Edit2, Trash2, Search, Plus, BarChart3, FileText, Users, Lock, Settings, FolderTree } from 'lucide-react';
 import { Method } from '../data/methods';

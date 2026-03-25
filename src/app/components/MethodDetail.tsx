@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, User, Tag, CheckCircle, Lightbulb, Wrench, ExternalLink } from 'lucide-react';
 import { methods as defaultMethods, Method } from '../data/methods';

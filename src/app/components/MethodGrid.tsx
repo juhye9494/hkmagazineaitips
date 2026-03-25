@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { CategoryManager } from './CategoryManager';
 import { getFirebaseCategories } from '../../lib/api';
 import { FileText, Image, Video, Code, BookOpen, Mic, PenTool, Sparkles, Users, Edit2 } from 'lucide-react';
