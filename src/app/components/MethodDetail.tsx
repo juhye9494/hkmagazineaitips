@@ -1,9 +1,23 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Clock, User, Tag, CheckCircle, Lightbulb, Wrench, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Clock, User, Tag, CheckCircle, Lightbulb, Wrench, ExternalLink, FileText, Image, Video, Code, Sparkles } from 'lucide-react';
 import { methods as defaultMethods, Method } from '../data/methods';
 import { useState, useEffect } from 'react';
 import { getFirebaseGuides } from '../../lib/api';
+
+const iconMap: Record<string, any> = {
+  '문서작성': FileText,
+  '디자인': Image,
+  '멀티미디어': Video,
+  '개발': Code,
+};
+
+const tagColorMap: Record<string, string> = {
+  '문서작성': 'bg-blue-100 text-blue-700',
+  '디자인': 'bg-pink-100 text-pink-700',
+  '멀티미디어': 'bg-purple-100 text-purple-700',
+  '개발': 'bg-green-100 text-green-700',
+};
 
 export function MethodDetail() {
   const { id } = useParams();
@@ -15,7 +29,12 @@ export function MethodDetail() {
     const fetchGuides = async () => {
       try {
         const firebaseGuides = await getFirebaseGuides();
-        setAllMethods([...firebaseGuides, ...defaultMethods]);
+        const hydratedGuides = firebaseGuides.map(guide => ({
+          ...guide,
+          icon: iconMap[guide.tag] || Sparkles,
+          tagColor: tagColorMap[guide.tag] || 'bg-blue-100 text-blue-700'
+        }));
+        setAllMethods([...hydratedGuides, ...defaultMethods]);
       } catch (error) {
         console.error('Failed to load custom guides from Firebase:', error);
       }

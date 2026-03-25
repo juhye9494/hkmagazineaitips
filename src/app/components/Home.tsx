@@ -37,7 +37,12 @@ export function Home() {
     const fetchGuides = async () => {
       try {
         const firebaseGuides = await getFirebaseGuides();
-        setMethods([...firebaseGuides, ...defaultMethods]);
+        const hydratedGuides = firebaseGuides.map(guide => ({
+          ...guide,
+          icon: iconMap[guide.tag] || Sparkles,
+          tagColor: tagColorMap[guide.tag] || 'bg-blue-100 text-blue-700'
+        }));
+        setMethods([...hydratedGuides, ...defaultMethods]);
       } catch (error) {
         console.error('Failed to load user guides from Firebase:', error);
       }
@@ -106,7 +111,8 @@ export function Home() {
       };
 
       // Save to Firebase
-      const { id: _, ...guideDataToSave } = newMethod; // 로컬용 임시 아이디 제외
+      // Firestore에 React 컴포넌트인 icon, tagColor 등을 넘길 수 없으므로 제외합니다.
+      const { id: _, icon: __, tagColor: ___, ...guideDataToSave } = newMethod as any;
       const newId = await createFirebaseGuide(guideDataToSave);
       const newFirebaseMethod = { ...newMethod, id: newId };
       
@@ -135,7 +141,8 @@ export function Home() {
     // Save to Firebase (기본 제공 가이드가 아닌 경우만)
     if (!defaultMethods.find(m => m.id === updatedMethod.id)) {
       try {
-        await updateFirebaseGuide(updatedMethod.id, updatedMethod);
+        const { id, icon, tagColor, ...updateData } = updatedMethod as any;
+        await updateFirebaseGuide(updatedMethod.id, updateData);
       } catch (error) {
         console.error('Failed to update guide to Firebase:', error);
       }
