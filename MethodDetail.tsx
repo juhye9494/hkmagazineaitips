@@ -3,7 +3,9 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Clock, User, Tag, CheckCircle, Lightbulb, Wrench, ExternalLink, FileText, Image, Video, Code, Sparkles } from 'lucide-react';
 import { methods as defaultMethods, Method } from '../data/methods';
 import { useState, useEffect } from 'react';
-import { getFirebaseGuides } from '../../lib/api';
+import { getFirebaseGuides, updateFirebaseGuide } from '../../lib/api';
+import { CreateGuideDialog, NewGuideData } from './CreateGuideDialog';
+import { uploadImageToFirebase, dataURLtoFile } from '../../lib/uploadImage';
 
 const iconMap: Record<string, any> = {
   '문서작성': FileText,
@@ -23,6 +25,13 @@ export function MethodDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [allMethods, setAllMethods] = useState<Method[]>(defaultMethods);
+  
+  // Edit State
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [isEditGuideOpen, setIsEditGuideOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
 
   // Load custom guides from Firebase on mount
   useEffect(() => {
@@ -43,6 +52,99 @@ export function MethodDetail() {
   }, []);
 
   const method = allMethods.find((m) => m.id === id);
+
+  const handleEditClick = () => {
+    if (!method?.password) {
+      alert('비밀번호가 설정되지 않은 가이드는 수정할 수 없습니다.');
+      return;
+    }
+    setIsPasswordModalOpen(true);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === method?.password) {
+      setIsPasswordModalOpen(false);
+      setPasswordInput('');
+      setIsEditGuideOpen(true);
+    } else {
+      alert('비밀번호가 일치하지 않습니다.');
+    }
+  };
+
+  const handleUpdateGuide = async (guideData: NewGuideData) => {
+    if (!method) return;
+    try {
+      setIsUploading(true);
+      setUploadProgress('이미지 업로드 중...');
+
+      let uploadedImageUrl = '';
+      if (guideData.image && guideData.image.startsWith('data:')) {
+        try {
+          setUploadProgress('대표 이미지 업로드 중...');
+          const imageFile = dataURLtoFile(guideData.image, `thumbnail-${Date.now()}.png`);
+          uploadedImageUrl = await uploadImageToFirebase(imageFile, 'thumbnails');
+        } catch (error) {
+          throw new Error('대표 이미지 업로드에 실패했습니다.');
+        }
+      } else if (guideData.image) {
+        uploadedImageUrl = guideData.image; 
+      }
+
+      const updatedSteps = await Promise.all(
+        guideData.steps.map(async (step, stepIndex) => {
+          if (step.images && step.images.length > 0) {
+            setUploadProgress(`단계 ${stepIndex + 1} 이미지 업로드 중...`);
+            const uploadedImages = await Promise.all(
+              step.images.map(async (img, imgIndex) => {
+                if (img.startsWith('data:')) {
+                  const imageFile = dataURLtoFile(img, `step-${stepIndex}-${imgIndex}-${Date.now()}.png`);
+                  return await uploadImageToFirebase(imageFile, 'guide-steps');
+                }
+                return img;
+              })
+            );
+            return { ...step, images: uploadedImages };
+          }
+          return step;
+        })
+      );
+
+      setUploadProgress('가이드 저장 중...');
+      const updatePayload: Partial<Method> = {
+        title: guideData.title,
+        author: guideData.author,
+        tag: guideData.tag,
+        description: guideData.description,
+        steps: updatedSteps,
+        tips: guideData.tips,
+        tools: guideData.tools,
+        references: guideData.references,
+        image: uploadedImageUrl || undefined,
+        password: guideData.password,
+      };
+
+      // Remove undefined values
+      const cleanPayload = Object.fromEntries(Object.entries(updatePayload).filter(([_, v]) => v !== undefined));
+
+      await updateFirebaseGuide(method.id, cleanPayload);
+      
+      // Update local state to reflect changes instantly
+      const updatedMethod = { ...method, ...cleanPayload, icon: iconMap[guideData.tag] || Sparkles, tagColor: tagColorMap[guideData.tag] || 'bg-blue-100 text-blue-700' } as Method;
+      setAllMethods(prev => prev.map(m => m.id === method.id ? updatedMethod : m));
+      
+      setIsUploading(false);
+      setUploadProgress('');
+      setIsEditGuideOpen(false);
+      alert('성공적으로 수정되었습니다!');
+
+    } catch (error) {
+      console.error('업데이트 실패:', error);
+      setIsUploading(false);
+      setUploadProgress('');
+      alert('가이드 수정 중 오류가 발생했습니다.');
+    }
+  };
 
   if (!method) {
     return (
@@ -66,13 +168,20 @@ export function MethodDetail() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">돌아가기</span>
+          </button>
+          
+          <button
+            onClick={handleEditClick}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          >
+            수정하기
           </button>
         </div>
       </div>
@@ -284,6 +393,58 @@ export function MethodDetail() {
           </button>
         </motion.div>
       </div>
+
+      {/* Password Prompt Modal */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full"
+          >
+            <h3 className="text-xl font-bold mb-4">비밀번호 입력</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              가이드를 수정하려면 등록 시 설정한 비밀번호를 입력해주세요.
+            </p>
+            <form onSubmit={handlePasswordSubmit}>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                autoFocus
+                className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="비밀번호"
+                required
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                >
+                  확인
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Component */}
+      <CreateGuideDialog
+        isOpen={isEditGuideOpen}
+        onClose={() => setIsEditGuideOpen(false)}
+        onSubmit={handleUpdateGuide}
+        isUploading={isUploading}
+        uploadProgress={uploadProgress}
+        initialData={method}
+      />
     </div>
   );
 }
