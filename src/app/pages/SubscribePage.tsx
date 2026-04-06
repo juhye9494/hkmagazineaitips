@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle, Share2, ArrowLeft, ExternalLink } from "lucide-react";
 import { getEmployeeById, getNaverAuthUrl, verifyNaverAndCount } from "../utils/api";
 import type { Employee } from "../utils/api";
