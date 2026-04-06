@@ -55,16 +55,23 @@ export function Home() {
       setIsUploading(true);
       setUploadProgress('이미지 업로드 중...');
 
-      // 1. 대표 이미지 업로드
-      let uploadedImageUrl = guideData.image;
+      // 1. 대표 이미지 업로드 (필수)
+      let uploadedImageUrl = '';
       if (guideData.image && guideData.image.startsWith('data:')) {
         try {
           setUploadProgress('대표 이미지 업로드 중...');
           const imageFile = dataURLtoFile(guideData.image, `thumbnail-${Date.now()}.png`);
           uploadedImageUrl = await uploadImageToFirebase(imageFile, 'thumbnails');
         } catch (error) {
-          console.warn('대표 이미지 업로드 실패, Base64로 저장:', error);
+          console.error('대표 이미지 업로드 실패:', error);
+          throw new Error('대표 이미지 업로드에 실패했습니다. 유효한 이미지인지 확인해주세요.');
         }
+      } else if (guideData.image) {
+        uploadedImageUrl = guideData.image; // 이미 Storage URL인 경우
+      }
+
+      if (!uploadedImageUrl) {
+        throw new Error('대표 이미지 업로드 URL을 생성하지 못했습니다.');
       }
 
       // 2. 단계별 이미지 업로드
@@ -79,8 +86,8 @@ export function Home() {
                     const imageFile = dataURLtoFile(img, `step-${stepIndex}-${imgIndex}-${Date.now()}.png`);
                     return await uploadImageToFirebase(imageFile, 'guide-steps');
                   } catch (error) {
-                    console.warn(`단계 ${stepIndex + 1} 이미지 ${imgIndex + 1} 업로드 실패:`, error);
-                    return img;
+                    console.error(`단계 ${stepIndex + 1} 이미지 ${imgIndex + 1} 업로드 실패:`, error);
+                    throw new Error(`단계 ${stepIndex + 1}의 이미지를 업로드하는 데 실패했습니다.`);
                   }
                 }
                 return img;

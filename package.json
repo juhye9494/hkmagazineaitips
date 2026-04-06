@@ -4,10 +4,17 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.5",
@@ -67,10 +74,15 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.12",
-    "@vitejs/plugin-react": "4.7.0",
+    "typescript": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "postcss": "latest",
     "tailwindcss": "4.1.12",
-    "vite": "6.3.5"
+    "@tailwindcss/postcss": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest"
   },
   "peerDependencies": {
     "react": "18.3.1",

@@ -4,6 +4,7 @@ import { CategoryManager } from './CategoryManager';
 import { getFirebaseCategories } from '../../lib/api';
 import { X, Plus, Minus, Upload, FileText, Image as ImageIcon, Video, Code, Loader2 } from 'lucide-react';
 import { uploadImageToFirebase } from '../../lib/uploadImage';
+import { Method } from '../data/methods';
 
 interface CreateGuideDialogProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface CreateGuideDialogProps {
   onSubmit: (guide: NewGuideData) => void;
   isUploading?: boolean;
   uploadProgress?: string;
+  initialData?: Method;
 }
 
 export interface NewGuideData {
@@ -33,7 +35,7 @@ const defaultCategories = [
   { id: 'development', label: '개발', icon: Code, color: 'bg-green-100 text-green-700' },
 ];
 
-export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uploadProgress }: CreateGuideDialogProps) {
+export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uploadProgress, initialData }: CreateGuideDialogProps) {
   const [categories, setCategories] = useState(defaultCategories);
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -51,6 +53,31 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
 
   useEffect(() => {
     if (isOpen) {
+      if (initialData) {
+        setTitle(initialData.title);
+        setAuthor(initialData.author);
+        setSelectedCategory(initialData.tag);
+        setDescription(initialData.description);
+        setSteps(initialData.steps && initialData.steps.length > 0 ? [...initialData.steps] : [{ title: '', content: '', images: [] }]);
+        setTips(initialData.tips && initialData.tips.length > 0 ? [...initialData.tips] : ['']);
+        setTools(initialData.tools && initialData.tools.length > 0 ? [...initialData.tools] : ['']);
+        setReferences(initialData.references && initialData.references.length > 0 ? [...initialData.references] : []);
+        setImage(initialData.image);
+        setPassword(initialData.password || '');
+      } else {
+        // Reset form completely if not editing
+        setTitle('');
+        setAuthor('');
+        setSelectedCategory('');
+        setDescription('');
+        setSteps([{ title: '', content: '', images: [] }]);
+        setTips(['']);
+        setTools(['']);
+        setReferences([]);
+        setImage(undefined);
+        setPassword('');
+      }
+
       const fetchCategories = async () => {
         try {
           const savedCategories = await getFirebaseCategories();
@@ -75,7 +102,7 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
       };
       fetchCategories();
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,8 +211,8 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !author || !selectedCategory || !description) {
-      alert('제목, 작성자, 카테고리, 설명은 필수 입력 항목입니다.');
+    if (!title || !author || !selectedCategory || !description || !image) {
+      alert('대표 이미지를 포함한 모든 필수 항목을 입력해주세요.');
       return;
     }
 
@@ -273,7 +300,9 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between rounded-t-2xl">
-                  <h2 className="text-2xl font-semibold text-gray-900">나만의 가이드 공유하기</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    {initialData ? '가이드 수정하기' : '나만의 가이드 공유하기'}
+                  </h2>
                   <button
                     onClick={onClose}
                     className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
@@ -354,7 +383,7 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        대표 이미지 (선택)
+                        대표 이미지 <span className="text-red-500">*</span>
                       </label>
                       <div className="space-y-3">
                         <input
@@ -479,7 +508,7 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
                             )}
                             
                             <input
-                              ref={(el) => stepImageInputRefs.current[index] = el}
+                              ref={(el) => { stepImageInputRefs.current[index] = el; }}
                               type="file"
                               accept="image/*"
                               multiple
@@ -634,7 +663,7 @@ export function CreateGuideDialog({ isOpen, onClose, onSubmit, isUploading, uplo
                       type="submit"
                       className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
                     >
-                      가이드 공유하기
+                      {initialData ? '수정 완료' : '가이드 공유하기'}
                     </button>
                   </div>
                 </form>
