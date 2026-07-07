@@ -25,7 +25,8 @@ export default function Home() {
 
       const { data, error } = await query
       if (error) throw error
-      setPosts(data || [])
+      setPosts(data || []);
+    console.log('Fetched posts (frontend):', data);
     } catch (err) {
       console.error('데이터 조회 오류:', err)
     } finally {
@@ -95,11 +96,13 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 animate-in fade-in duration-500">
             {posts.map((post) => (
               <Link key={post.id} href={`/posts/${post.id}`} className="group bg-white rounded-[2rem] overflow-hidden border border-gray-50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 shadow-sm flex flex-col">
-                <div className="aspect-[16/10] bg-gray-100 relative">
+                <div className="aspect-w-16 aspect-h-9 bg-gray-100 relative">
                   {post.image_url ? (
                     <img src={post.image_url} alt={post.title} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gradient-to-br from-gray-50 to-gray-100">AI Archive Card</div>
+                    <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gradient-to-br from-gray-50 to-gray-100">
+                      AI Archive Card
+                    </div>
                   )}
                   <div className="absolute top-4 left-4 flex gap-2">
                     <span className="bg-white/90 backdrop-blur-sm text-[#0056FF] px-3 py-1 rounded-lg text-xs font-bold shadow-sm">{post.category || '기타'}</span>
@@ -109,10 +112,15 @@ export default function Home() {
                   <h3 className="text-xl font-bold mb-8 leading-tight group-hover:text-[#0056FF] transition-colors h-[3.5rem] line-clamp-2">
                     {post.title}
                   </h3>
-                  <div className="mt-auto flex justify-between items-center pt-6 border-t border-gray-50">
+                  <div className="mt-auto flex flex-col gap-2 text-sm text-gray-500">
+                    <span>작성자: <span className="text-gray-900">{post.author_name || 'Member'}</span></span>
+                    <span>소요시간: <span className="text-gray-900">{post.working_time || '-'}</span></span>
+                    <span>비용 절감: <span className="text-gray-900">{post.cost_saving || '-'}</span></span>
+                  </div>
+                  <div className="mt-4 flex justify-between items-center pt-6 border-t border-gray-50">
                     <span className="text-sm font-medium text-gray-400">작성자: <span className="text-gray-900">Member</span></span>
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-[#0056FF] group-hover:bg-[#0056FF] group-hover:text-white transition-all">
-                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                     </div>
                   </div>
                 </div>

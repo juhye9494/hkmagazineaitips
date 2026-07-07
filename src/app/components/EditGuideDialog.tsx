@@ -380,7 +380,7 @@ export function EditGuideDialog({ isOpen, onClose, onSubmit, guide }: EditGuideD
                             )}
                             
                             <input
-                              ref={(el) => stepImageInputRefs.current[index] = el}
+                              ref={(el) => { stepImageInputRefs.current[index] = el; }}
                               type="file"
                               accept="image/*"
                               multiple
